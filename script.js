@@ -8,6 +8,7 @@ class World {
       1000
     );
     this.cubeElement = new Cube();
+    this.planeElement = new Plane();
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.ambientLight = new THREE.AmbientLight(0x404040, 1.2);
     this.pointLight = new THREE.PointLight(0x404040, 5, 18);
@@ -25,15 +26,18 @@ class World {
     this.renderer.shadowMap.type = THREE.BasicShadowMap;
     document.body.appendChild(this.renderer.domElement);
     this.scene.background = new THREE.Color(0xaaccff);
-    this.pointLight.position.set(-3,6,-3)
-    this.pointLight.castShadow = true
-    this.pointLight.shadow.camera.near = 0.1
-    this.pointLight.shadow.camera.far = 25
+    this.pointLight.position.set(-3, 6, -3);
+    this.pointLight.castShadow = true;
+    this.pointLight.shadow.camera.near = 0.1;
+    this.pointLight.shadow.camera.far = 25;
     this.scene.add(this.pointLight);
     this.scene.add(this.ambientLight);
     this.scene.fog = new THREE.FogExp2(0xaaccff, 0.0007);
     this.scene.add(this.cubeElement.cube);
-    this.camera.position.z = 5;
+    this.scene.add(this.planeElement.plane);
+    this.camera.position.z = 7;
+    this.camera.position.y = 1;
+    // this.camera.rotation.x = 0
   }
 
   animate() {
@@ -54,9 +58,35 @@ class World {
 
 class Cube {
   constructor() {
-    this.geometry = new THREE.BoxBufferGeometry(1, 1, 1);
+    this.geometry = new THREE.SphereBufferGeometry(1.5, 7, 7);
     this.material = new THREE.MeshPhongMaterial({ color: 0xff5733 });
     this.cube = new THREE.Mesh(this.geometry, this.material);
+    this.init = this.init.bind(this);
+    this.init();
+  }
+
+  init() {
+    this.cube.receiveShadow = true;
+    this.cube.castShadow = true;
+  }
+}
+
+class Plane {
+  constructor() {
+    this.geometry = new THREE.PlaneBufferGeometry(1000, 1000);
+    this.material = new THREE.ShadowMaterial({
+      opacity: 0.15
+    });
+    this.plane = new THREE.Mesh(this.geometry, this.material);
+    this.init = this.init.bind(this);
+    this.init();
+  }
+  init() {
+    this.plane.position.y = -50;
+    this.plane.position.x = 0;
+    this.plane.position.z = 0;
+    this.plane.rotation.x = (Math.PI / 180) * -90;
+    this.plane.receiveShadow = true;
   }
 }
 
