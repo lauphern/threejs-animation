@@ -1,7 +1,5 @@
-const THREE = require('three');
-const OrbitControls = require('three-orbit-controls')(THREE)
-// import * as THREE from 'three';
-// import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+const THREE = require("three");
+const OrbitControls = require("three-orbit-controls")(THREE);
 
 class World {
   constructor() {
@@ -14,8 +12,9 @@ class World {
     );
     this.cubeElement = new Cube();
     this.planeElement = new Plane();
+    this.quoteElement = new Quote("Home is not where you are born; home is where all your attempts to escape cease");
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
-    this.controls 
+    this.controls;
     this.ambientLight = new THREE.AmbientLight(0x404040, 1.2);
     this.pointLight = new THREE.PointLight(0x404040, 5, 18);
 
@@ -31,7 +30,7 @@ class World {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.BasicShadowMap;
     document.body.appendChild(this.renderer.domElement);
-    this.controls = new OrbitControls( this.camera, this.renderer.domElement );
+    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.scene.background = new THREE.Color(0xaaccff);
     this.pointLight.position.set(-3, 6, 3);
     this.pointLight.castShadow = true;
@@ -42,10 +41,9 @@ class World {
     this.scene.fog = new THREE.FogExp2(0xaaccff, 0.0007);
     this.scene.add(this.cubeElement.cube);
     this.scene.add(this.planeElement.plane);
-    this.camera.position.set( 0, 5, 10 );
-    // this.camera.position.z = 7;
-    // this.camera.position.y = 1;
-    // this.camera.rotation.x = 0
+    setTimeout(() => {this.scene.add(this.quoteElement.text)}, 2000)
+    this.camera.position.set(0, 5, 10);
+    this.controls.update();
   }
 
   animate() {
@@ -95,6 +93,39 @@ class Plane {
     this.plane.position.z = 0;
     this.plane.rotation.x = (Math.PI / 180) * -90;
     this.plane.receiveShadow = true;
+  }
+}
+
+class Quote {
+  constructor(qt) {
+    this.qt = qt
+    this.text_loader = new THREE.FontLoader();
+    this.geometry = 
+    this.material = new THREE.MeshPhongMaterial({ color: 0xff5733 })
+    this.text;
+    this.init = this.init.bind(this);
+    this.init();
+  }
+
+  init() {
+    this.text_loader.load("fonts/Dosis_Regular.json", (font) => {
+      const geometry = new THREE.TextBufferGeometry(this.qt, {
+        font: font,
+        size: 0.7,
+        height: 0.02,
+        // curveSegments: 1,
+        bevelEnabled: true,
+        bevelThickness: 0.02,
+        bevelSize: 0.02,
+        // bevelSegments: 7
+      });
+      geometry.center();
+      this.text = new THREE.Mesh(
+        geometry,
+        this.material
+      );
+      this.text.position.set(0, 1, 3);
+    });
   }
 }
 
