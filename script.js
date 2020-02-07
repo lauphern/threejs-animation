@@ -1,15 +1,21 @@
+const THREE = require('three');
+const OrbitControls = require('three-orbit-controls')(THREE)
+// import * as THREE from 'three';
+// import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+
 class World {
   constructor() {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(
-      75,
+      85,
       window.innerWidth / window.innerHeight,
-      0.1,
+      1,
       1000
     );
     this.cubeElement = new Cube();
     this.planeElement = new Plane();
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
+    this.controls 
     this.ambientLight = new THREE.AmbientLight(0x404040, 1.2);
     this.pointLight = new THREE.PointLight(0x404040, 5, 18);
 
@@ -25,8 +31,9 @@ class World {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.BasicShadowMap;
     document.body.appendChild(this.renderer.domElement);
+    this.controls = new OrbitControls( this.camera, this.renderer.domElement );
     this.scene.background = new THREE.Color(0xaaccff);
-    this.pointLight.position.set(-3, 6, -3);
+    this.pointLight.position.set(-3, 6, 3);
     this.pointLight.castShadow = true;
     this.pointLight.shadow.camera.near = 0.1;
     this.pointLight.shadow.camera.far = 25;
@@ -35,8 +42,9 @@ class World {
     this.scene.fog = new THREE.FogExp2(0xaaccff, 0.0007);
     this.scene.add(this.cubeElement.cube);
     this.scene.add(this.planeElement.plane);
-    this.camera.position.z = 7;
-    this.camera.position.y = 1;
+    this.camera.position.set( 0, 5, 10 );
+    // this.camera.position.z = 7;
+    // this.camera.position.y = 1;
     // this.camera.rotation.x = 0
   }
 
