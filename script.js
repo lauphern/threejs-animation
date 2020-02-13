@@ -1,5 +1,6 @@
 const THREE = require("three");
 const OrbitControls = require("three-orbit-controls")(THREE);
+const POSTPROCESSING = require("postprocessing");
 
 class World {
   constructor() {
@@ -12,7 +13,9 @@ class World {
     );
     this.cubeElement = new Cube();
     this.planeElement = new Plane();
-    this.quoteElement = new Quote("Home is not where you are born; home is where all your attempts to escape cease");
+    this.firstLine = new Quote("Home is not where you are born;", [0, 1, 5]);
+    this.secondLine = new Quote("home is where all your attempts", [0, 0, 5]);
+    this.thirdLine = new Quote("to escape cease", [0, -1, 5]);
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.controls;
     this.ambientLight = new THREE.AmbientLight(0x404040, 1.2);
@@ -22,6 +25,37 @@ class World {
     this.onWindowResize = this.onWindowResize.bind(this);
     window.addEventListener("resize", this.onWindowResize, false);
     this.init();
+
+    this.composer = new POSTPROCESSING.EffectComposer(this.renderer);
+    this.composer.addPass(
+      new POSTPROCESSING.RenderPass(this.scene, this.camera)
+    );
+    const hueSaturationEffect = new POSTPROCESSING.HueSaturationEffect({
+      saturation: -1
+    });
+
+    // const effectPass = new POSTPROCESSING.EffectPass(
+    //   this.camera,
+    //   new POSTPROCESSING.BloomEffect(),
+    //   hueSaturationEffect
+    // );
+    // effectPass.renderToScreen = true;
+    // this.composer.addPass(effectPass);
+    // const bloomPass = new BloomPass(
+    //   1, // strength
+    //   25, // kernel size
+    //   4, // sigma ?
+    //   256 // blur render target resolution
+    // );
+    // composer.addPass(bloomPass);
+    // const filmPass = new FilmPass(
+    //   0.35, // noise intensity
+    //   0.025, // scanline intensity
+    //   648, // scanline count
+    //   false // grayscale
+    // );
+    // filmPass.renderToScreen = true;
+    // composer.addPass(filmPass);
     this.animate();
   }
 
@@ -32,7 +66,7 @@ class World {
     document.body.appendChild(this.renderer.domElement);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.scene.background = new THREE.Color(0xaaccff);
-    this.pointLight.position.set(-3, 6, 3);
+    this.pointLight.position.set(-3, 6, 10);
     this.pointLight.castShadow = true;
     this.pointLight.shadow.camera.near = 0.1;
     this.pointLight.shadow.camera.far = 25;
@@ -41,8 +75,13 @@ class World {
     this.scene.fog = new THREE.FogExp2(0xaaccff, 0.0007);
     this.scene.add(this.cubeElement.cube);
     this.scene.add(this.planeElement.plane);
-    setTimeout(() => {this.scene.add(this.quoteElement.text)}, 2000)
-    this.camera.position.set(0, 5, 10);
+    setTimeout(() => {
+      this.scene.add(this.firstLine.text);
+      this.scene.add(this.secondLine.text);
+      this.scene.add(this.thirdLine.text);
+    }, 2000);
+    // this.camera.position.set(-5.2, 1, 7.5);
+    this.camera.position.set(0, -2, 8.5);
     this.controls.update();
   }
 
@@ -53,6 +92,7 @@ class World {
     this.cubeElement.cube.rotation.y += 0.01;
 
     this.renderer.render(this.scene, this.camera);
+    // this.composer.renderer.render(this.scene, this.camera);
   }
 
   onWindowResize() {
@@ -97,18 +137,19 @@ class Plane {
 }
 
 class Quote {
-  constructor(qt) {
-    this.qt = qt
+  constructor(qt, coordinates) {
+    this.qt = qt;
     this.text_loader = new THREE.FontLoader();
-    this.geometry = 
-    this.material = new THREE.MeshPhongMaterial({ color: 0xff5733 })
+    this.geometry = this.material = new THREE.MeshPhongMaterial({
+      color: 0xff5733
+    });
     this.text;
     this.init = this.init.bind(this);
-    this.init();
+    this.init(coordinates);
   }
 
-  init() {
-    this.text_loader.load("fonts/Dosis_Regular.json", (font) => {
+  init(coordinates) {
+    this.text_loader.load("fonts/Dosis_Regular.json", font => {
       const geometry = new THREE.TextBufferGeometry(this.qt, {
         font: font,
         size: 0.7,
@@ -116,15 +157,13 @@ class Quote {
         // curveSegments: 1,
         bevelEnabled: true,
         bevelThickness: 0.02,
-        bevelSize: 0.02,
+        bevelSize: 0.02
         // bevelSegments: 7
       });
       geometry.center();
-      this.text = new THREE.Mesh(
-        geometry,
-        this.material
-      );
-      this.text.position.set(0, 1, 3);
+      this.text = new THREE.Mesh(geometry, this.material);
+      // let test = [3,1,5]
+      this.text.position.set(...coordinates);
     });
   }
 }
