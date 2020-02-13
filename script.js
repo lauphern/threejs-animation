@@ -13,9 +13,19 @@ class World {
     );
     this.cubeElement = new Cube();
     this.planeElement = new Plane();
-    this.firstLine = new Quote("Home is not where you are born;", [0, 1, 5]);
-    this.secondLine = new Quote("home is where all your attempts", [0, 0, 5]);
-    this.thirdLine = new Quote("to escape cease", [0, -1, 5]);
+    this.firstLine = new Quote(
+      "Home is not where you are born;",
+      [0, 1, 5]
+    );
+    this.secondLine = new Quote(
+      "home is where all your attempts",
+      [0, 0, 5]
+    );
+    this.thirdLine = new Quote(
+      "to escape cease",
+      [0, -1, 5],
+      this.init.bind(this)
+    );
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.controls;
     this.ambientLight = new THREE.AmbientLight(0x404040, 1.2);
@@ -24,7 +34,6 @@ class World {
     this.animate = this.animate.bind(this);
     this.onWindowResize = this.onWindowResize.bind(this);
     window.addEventListener("resize", this.onWindowResize, false);
-    this.init();
 
     this.composer = new POSTPROCESSING.EffectComposer(this.renderer);
     this.composer.addPass(
@@ -75,11 +84,9 @@ class World {
     this.scene.fog = new THREE.FogExp2(0xaaccff, 0.0007);
     this.scene.add(this.cubeElement.cube);
     this.scene.add(this.planeElement.plane);
-    setTimeout(() => {
-      this.scene.add(this.firstLine.text);
-      this.scene.add(this.secondLine.text);
-      this.scene.add(this.thirdLine.text);
-    }, 2000);
+    this.scene.add(this.firstLine.text);
+    this.scene.add(this.secondLine.text);
+    this.scene.add(this.thirdLine.text);
     // this.camera.position.set(-5.2, 1, 7.5);
     this.camera.position.set(0, -2, 8.5);
     this.controls.update();
@@ -137,33 +144,32 @@ class Plane {
 }
 
 class Quote {
-  constructor(qt, coordinates) {
+  constructor(qt, coordinates, cb) {
     this.qt = qt;
-    this.text_loader = new THREE.FontLoader();
-    this.geometry = this.material = new THREE.MeshPhongMaterial({
+    this.textLoader = new THREE.FontLoader();
+    this.geometry;
+    this.material = new THREE.MeshPhongMaterial({
       color: 0xff5733
     });
     this.text;
     this.init = this.init.bind(this);
-    this.init(coordinates);
+    this.init(coordinates, cb);
   }
 
-  init(coordinates) {
-    this.text_loader.load("fonts/Dosis_Regular.json", font => {
-      const geometry = new THREE.TextBufferGeometry(this.qt, {
+  init(coordinates, cb) {
+    this.textLoader.load("fonts/Dosis_Regular.json", font => {
+      this.geometry = new THREE.TextBufferGeometry(this.qt, {
         font: font,
         size: 0.7,
         height: 0.02,
-        // curveSegments: 1,
         bevelEnabled: true,
         bevelThickness: 0.02,
         bevelSize: 0.02
-        // bevelSegments: 7
       });
-      geometry.center();
-      this.text = new THREE.Mesh(geometry, this.material);
-      // let test = [3,1,5]
+      this.geometry.center();
+      this.text = new THREE.Mesh(this.geometry, this.material);
       this.text.position.set(...coordinates);
+      if(cb) cb();
     });
   }
 }
