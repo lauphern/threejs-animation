@@ -2,6 +2,8 @@ const THREE = require("three");
 const OrbitControls = require("three-orbit-controls")(THREE);
 const POSTPROCESSING = require("postprocessing");
 
+//TODO poner algo de audio https://threejs.org/docs/index.html#api/en/audio/Audio
+
 class World {
   constructor() {
     this.scene = new THREE.Scene();
@@ -11,16 +13,10 @@ class World {
       1,
       1000
     );
-    this.cubeElement = new Cube();
+    this.sphereElement = new Sphere();
     this.planeElement = new Plane();
-    this.firstLine = new Quote(
-      "Home is not where you are born;",
-      [0, 1, 5]
-    );
-    this.secondLine = new Quote(
-      "home is where all your attempts",
-      [0, 0, 5]
-    );
+    this.firstLine = new Quote("Home is not where you are born;", [0, 1, 5]);
+    this.secondLine = new Quote("home is where all your attempts", [0, 0, 5]);
     this.thirdLine = new Quote(
       "to escape cease",
       [0, -1, 5],
@@ -34,6 +30,8 @@ class World {
     this.animate = this.animate.bind(this);
     this.onWindowResize = this.onWindowResize.bind(this);
     window.addEventListener("resize", this.onWindowResize, false);
+
+    this.hue = 0;
 
     this.composer = new POSTPROCESSING.EffectComposer(this.renderer);
     this.composer.addPass(
@@ -82,7 +80,7 @@ class World {
     this.scene.add(this.pointLight);
     this.scene.add(this.ambientLight);
     this.scene.fog = new THREE.FogExp2(0xaaccff, 0.0007);
-    this.scene.add(this.cubeElement.cube);
+    this.scene.add(this.sphereElement.sphere);
     this.scene.add(this.planeElement.plane);
     this.scene.add(this.firstLine.text);
     this.scene.add(this.secondLine.text);
@@ -95,9 +93,21 @@ class World {
   animate() {
     requestAnimationFrame(this.animate);
 
-    this.cubeElement.cube.rotation.x += 0.01;
-    this.cubeElement.cube.rotation.y += 0.01;
+    this.sphereElement.sphere.rotation.x += 0.01;
+    this.sphereElement.sphere.rotation.y += 0.01;
 
+    this.firstLine.material.color.set(
+      new THREE.Color(`hsl(${this.hue}, 70%, 85%)`)
+    );
+    this.secondLine.material.color.set(
+      new THREE.Color(`hsl(${this.hue}, 70%, 85%)`)
+    );
+    this.thirdLine.material.color.set(
+      new THREE.Color(`hsl(${this.hue}, 70%, 85%)`)
+    );
+
+    if (this.hue == 359) this.hue = 0;
+    else this.hue++;
     this.renderer.render(this.scene, this.camera);
     // this.composer.renderer.render(this.scene, this.camera);
   }
@@ -109,18 +119,18 @@ class World {
   }
 }
 
-class Cube {
+class Sphere {
   constructor() {
     this.geometry = new THREE.SphereBufferGeometry(1.5, 7, 7);
     this.material = new THREE.MeshPhongMaterial({ color: 0xff5733 });
-    this.cube = new THREE.Mesh(this.geometry, this.material);
+    this.sphere = new THREE.Mesh(this.geometry, this.material);
     this.init = this.init.bind(this);
     this.init();
   }
 
   init() {
-    this.cube.receiveShadow = true;
-    this.cube.castShadow = true;
+    this.sphere.receiveShadow = true;
+    this.sphere.castShadow = true;
   }
 }
 
@@ -169,7 +179,7 @@ class Quote {
       this.geometry.center();
       this.text = new THREE.Mesh(this.geometry, this.material);
       this.text.position.set(...coordinates);
-      if(cb) cb();
+      if (cb) cb();
     });
   }
 }
