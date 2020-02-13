@@ -79,6 +79,7 @@ class World {
     this.pointLight.shadow.camera.far = 25;
     this.scene.add(this.pointLight);
     this.scene.add(this.ambientLight);
+    //TODO do the fog
     this.scene.fog = new THREE.FogExp2(0xaaccff, 0.0007);
     this.scene.add(this.sphereElement.sphere);
     this.scene.add(this.planeElement.plane);
@@ -93,8 +94,8 @@ class World {
   animate() {
     requestAnimationFrame(this.animate);
 
-    this.sphereElement.sphere.rotation.x += 0.01;
-    this.sphereElement.sphere.rotation.y += 0.01;
+    // this.sphereElement.sphere.rotation.x += 0.01;
+    // this.sphereElement.sphere.rotation.y += 0.01;
 
     this.firstLine.material.color.set(
       new THREE.Color(`hsl(${this.hue}, 70%, 85%)`)
@@ -108,6 +109,8 @@ class World {
 
     if (this.hue == 359) this.hue = 0;
     else this.hue++;
+
+    this.sphereElement.animateSurface();
     this.renderer.render(this.scene, this.camera);
     // this.composer.renderer.render(this.scene, this.camera);
   }
@@ -121,16 +124,53 @@ class World {
 
 class Sphere {
   constructor() {
-    this.geometry = new THREE.SphereBufferGeometry(1.5, 7, 7);
+    this.geometry = new THREE.SphereBufferGeometry(1.5, 32, 32);
+
     this.material = new THREE.MeshPhongMaterial({ color: 0xff5733 });
     this.sphere = new THREE.Mesh(this.geometry, this.material);
+    this.grow = true;
     this.init = this.init.bind(this);
+    this.animateSurface = this.animateSurface.bind(this);
     this.init();
   }
 
   init() {
     this.sphere.receiveShadow = true;
     this.sphere.castShadow = true;
+  }
+
+  animateSurface() {
+    // var position = this.geometry.attributes.position;
+    // debugger
+    this.geometry.attributes.position.usage = THREE.DynamicDrawUsage;
+    for (let i = 0; i < this.geometry.attributes.position.count; i += 4) {
+      // let xyz = [Math.random() * (1.5 - -1.5) + -1.5, Math.random() * (1.5 - -1.5) + -1.5, Math.random() * (1.5 - -1.5) + -1.5]
+      let xyz = [
+        Math.random() * (0.2 - -0.2) + -0.2 * Math.sin(i / 2),
+        Math.random() * (0.2 - -0.2) + -0.2 * Math.sin(i / 2),
+        Math.random() * (0.2 - -0.2) + -0.2 * Math.sin(i / 2)
+      ];
+      // var y = 35 * Math.sin(i / 2);
+      this.geometry.attributes.position.setXYZ(i, ...xyz);
+    }
+    // debugger
+    this.geometry.attributes.position.needsUpdate = true;
+
+    if (this.grow) {
+      this.sphere.scale.x = parseFloat((this.sphere.scale.z + 0.01).toFixed(2));
+      this.sphere.scale.y = parseFloat((this.sphere.scale.z + 0.01).toFixed(2));
+      this.sphere.scale.z = parseFloat((this.sphere.scale.z + 0.01).toFixed(2));
+    } else if(!this.grow){
+      this.sphere.scale.x = parseFloat((this.sphere.scale.z - 0.01).toFixed(2));
+      this.sphere.scale.y = parseFloat((this.sphere.scale.z - 0.01).toFixed(2));
+      this.sphere.scale.z = parseFloat((this.sphere.scale.z - 0.01).toFixed(2));
+    }
+    if(this.sphere.scale.x == 3) this.grow = false
+    if(this.sphere.scale.x == 1) this.grow = true
+    // console.log(this.sphere.scale.x, this.grow)
+    // this.geometry.parameters.radius.needsUpdate = true
+
+    // debugger
   }
 }
 
@@ -159,7 +199,7 @@ class Quote {
     this.textLoader = new THREE.FontLoader();
     this.geometry;
     this.material = new THREE.MeshPhongMaterial({
-      color: 0xff5733
+      color: new THREE.Color("hsl(0, 70%, 85%)")
     });
     this.text;
     this.init = this.init.bind(this);
