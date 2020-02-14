@@ -1,6 +1,10 @@
 const THREE = require("three");
 const OrbitControls = require("three-orbit-controls")(THREE);
-const POSTPROCESSING = require("postprocessing");
+import { EffectComposer } from "./node_modules/three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "./node_modules/three/examples/jsm/postprocessing/RenderPass.js";
+import { GlitchPass } from "./node_modules/three/examples/jsm/postprocessing/GlitchPass.js";
+import { UnrealBloomPass } from "./node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { BokehPass } from "./node_modules/three/examples/jsm/postprocessing/BokehPass.js";
 
 //TODO poner algo de audio https://threejs.org/docs/index.html#api/en/audio/Audio
 
@@ -10,7 +14,7 @@ class World {
     this.camera = new THREE.PerspectiveCamera(
       85,
       window.innerWidth / window.innerHeight,
-      1,
+      0.01,
       1000
     );
     this.sphereElement = new Sphere();
@@ -25,7 +29,7 @@ class World {
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.controls;
     this.ambientLight = new THREE.AmbientLight(0x404040, 2.5);
-    this.pointLight = new THREE.PointLight(0x0377fc, 2, 100, 2);
+    this.pointLight = new THREE.PointLight(0x0377fc, 0.5, 100, 2);
     this.secondaryPointLight = new THREE.PointLight(0xfcba03, 1, 100, 5);
 
     this.animate = this.animate.bind(this);
@@ -34,36 +38,35 @@ class World {
 
     this.hue = 0;
 
-    this.composer = new POSTPROCESSING.EffectComposer(this.renderer);
-    this.composer.addPass(
-      new POSTPROCESSING.RenderPass(this.scene, this.camera)
+    this.composer = new EffectComposer(this.renderer);
+    this.composer2 = new EffectComposer(
+      this.renderer,
+      new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight)
     );
-    const hueSaturationEffect = new POSTPROCESSING.HueSaturationEffect({
-      saturation: -1
-    });
 
-    // const effectPass = new POSTPROCESSING.EffectPass(
-    //   this.camera,
-    //   new POSTPROCESSING.BloomEffect(),
-    //   hueSaturationEffect
-    // );
-    // effectPass.renderToScreen = true;
-    // this.composer.addPass(effectPass);
-    // const bloomPass = new BloomPass(
-    //   1, // strength
-    //   25, // kernel size
-    //   4, // sigma ?
-    //   256 // blur render target resolution
-    // );
-    // composer.addPass(bloomPass);
-    // const filmPass = new FilmPass(
-    //   0.35, // noise intensity
-    //   0.025, // scanline intensity
-    //   648, // scanline count
-    //   false // grayscale
-    // );
-    // filmPass.renderToScreen = true;
-    // composer.addPass(filmPass);
+    this.renderPass = new RenderPass(this.scene, this.camera);
+    this.renderPass2 = new RenderPass(this.scene, this.camera);
+
+    this.bokehPass = new BokehPass(this.scene, this.camera, {
+      focus: 0.01,
+      aspect: this.camera.aspect,
+      aperture: 0.0004,
+      maxblur: 0.7,
+
+      width: window.innerWidth,
+      height: window.innerHeight
+    });
+    this.glitchPass = new GlitchPass();
+    this.composer.setSize(window.innerWidth, window.innerHeight);
+    this.composer2.setSize(window.innerWidth, window.innerHeight);
+
+    this.composer.addPass(this.renderPass);
+    this.composer2.addPass(this.renderPass2);
+
+    this.composer2.addPass(this.bokehPass);
+
+    this.composer.addPass(this.glitchPass);
+    // this.bokehPass.renderToScreen = true;
     this.animate();
   }
 
@@ -71,13 +74,14 @@ class World {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.BasicShadowMap;
+    this.renderer.setPixelRatio(window.devicePixelRatio);
     document.body.appendChild(this.renderer.domElement);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.scene.background = new THREE.Color(0xaaccff);
     this.pointLight.position.set(0, 6, 20);
     this.pointLight.castShadow = true;
     this.pointLight.shadow.camera.near = 0.1;
-    this.pointLight.shadow.camera.far = 25;
+    this.pointLight.shadow.camera.far = 200;
     this.secondaryPointLight.position.set(10, 10, 20);
     this.secondaryPointLight.castShadow = true;
     this.scene.add(this.ambientLight);
@@ -90,16 +94,16 @@ class World {
     this.scene.add(this.firstLine.text);
     this.scene.add(this.secondLine.text);
     this.scene.add(this.thirdLine.text);
-    // this.camera.position.set(0, -2, 8.5);
-    this.camera.position.set(7, -2.7, 7);
+    // this.camera.position.set(7, -2.7, 7);
+    this.camera.position.set(6, -0.7, 6.5);
     this.controls.update();
   }
 
   animate() {
     requestAnimationFrame(this.animate);
 
-    // this.sphereElement.sphere.rotation.x += 0.01;
-    // this.sphereElement.sphere.rotation.y += 0.01;
+    this.sphereElement.sphere.rotation.x += 0.01;
+    this.sphereElement.sphere.rotation.y += 0.01;
 
     this.firstLine.material.color.set(
       new THREE.Color(`hsl(${this.hue}, 70%, 85%)`)
@@ -114,9 +118,10 @@ class World {
     if (this.hue == 359) this.hue = 0;
     else this.hue++;
 
-    this.sphereElement.animateSurface();
-    this.renderer.render(this.scene, this.camera);
-    // this.composer.renderer.render(this.scene, this.camera);
+    // this.sphereElement.animateSurface();
+    // this.renderer.render(this.scene, this.camera);
+    this.composer.render();
+    this.composer2.render();
   }
 
   onWindowResize() {
