@@ -24,8 +24,9 @@ class World {
     );
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.controls;
-    this.ambientLight = new THREE.AmbientLight(0x404040, 1.2);
-    this.pointLight = new THREE.PointLight(0x404040, 5, 18);
+    this.ambientLight = new THREE.AmbientLight(0x404040, 2.5);
+    this.pointLight = new THREE.PointLight(0x0377fc, 2, 100, 2);
+    this.secondaryPointLight = new THREE.PointLight(0xfcba03, 1, 100, 5);
 
     this.animate = this.animate.bind(this);
     this.onWindowResize = this.onWindowResize.bind(this);
@@ -73,12 +74,15 @@ class World {
     document.body.appendChild(this.renderer.domElement);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.scene.background = new THREE.Color(0xaaccff);
-    this.pointLight.position.set(-3, 6, 10);
+    this.pointLight.position.set(0, 6, 20);
     this.pointLight.castShadow = true;
     this.pointLight.shadow.camera.near = 0.1;
     this.pointLight.shadow.camera.far = 25;
-    this.scene.add(this.pointLight);
+    this.secondaryPointLight.position.set(10, 10, 20);
+    this.secondaryPointLight.castShadow = true;
     this.scene.add(this.ambientLight);
+    this.scene.add(this.pointLight);
+    this.scene.add(this.secondaryPointLight);
     //TODO do the fog
     this.scene.fog = new THREE.FogExp2(0xaaccff, 0.0007);
     this.scene.add(this.sphereElement.sphere);
@@ -86,8 +90,8 @@ class World {
     this.scene.add(this.firstLine.text);
     this.scene.add(this.secondLine.text);
     this.scene.add(this.thirdLine.text);
-    // this.camera.position.set(-5.2, 1, 7.5);
-    this.camera.position.set(0, -2, 8.5);
+    // this.camera.position.set(0, -2, 8.5);
+    this.camera.position.set(7, -2.7, 7);
     this.controls.update();
   }
 
@@ -124,8 +128,8 @@ class World {
 
 class Sphere {
   constructor() {
-    this.geometry = new THREE.SphereBufferGeometry(1.5, 32, 32);
-
+    this.geometry = new THREE.SphereGeometry(1.2, 32, 32);
+    // debugger
     this.material = new THREE.MeshPhongMaterial({ color: 0xff5733 });
     this.sphere = new THREE.Mesh(this.geometry, this.material);
     this.grow = true;
@@ -142,31 +146,42 @@ class Sphere {
   animateSurface() {
     // var position = this.geometry.attributes.position;
     // debugger
-    this.geometry.attributes.position.usage = THREE.DynamicDrawUsage;
-    for (let i = 0; i < this.geometry.attributes.position.count; i += 4) {
-      // let xyz = [Math.random() * (1.5 - -1.5) + -1.5, Math.random() * (1.5 - -1.5) + -1.5, Math.random() * (1.5 - -1.5) + -1.5]
-      let xyz = [
-        Math.random() * (0.2 - -0.2) + -0.2 * Math.sin(i / 2),
-        Math.random() * (0.2 - -0.2) + -0.2 * Math.sin(i / 2),
-        Math.random() * (0.2 - -0.2) + -0.2 * Math.sin(i / 2)
-      ];
-      // var y = 35 * Math.sin(i / 2);
-      this.geometry.attributes.position.setXYZ(i, ...xyz);
-    }
-    // debugger
-    this.geometry.attributes.position.needsUpdate = true;
+    // this.geometry.attributes.position.usage = THREE.DynamicDrawUsage;
+    // for (let i = 0; i < this.geometry.attributes.position.count; i++) {
+    //   // let xyz = [Math.random() * (1.5 - -1.5) + -1.5, Math.random() * (1.5 - -1.5) + -1.5, Math.random() * (1.5 - -1.5) + -1.5]
+    //   let xyz = [
+    //     Math.random() * (0.1 - -0.1) + -0.1 * Math.sin(i / 2),
+    //     Math.random() * (0.1 - -0.1) + -0.1 * Math.sin(i / 2),
+    //     Math.random() * (0.1 - -0.1) + -0.1 * Math.sin(i / 2)
+    //   ];
+    //   // var y = 35 * Math.sin(i / 2);
+    //   this.geometry.attributes.position.setXYZ(i, ...xyz);
+    // }
+    // // debugger
+    // this.geometry.attributes.position.needsUpdate = true;
+
+    // for (let i = 0; i < this.geometry.attributes.position.count; i++) {
+    //   // let xyz = [Math.random() * (1.5 - -1.5) + -1.5, Math.random() * (1.5 - -1.5) + -1.5, Math.random() * (1.5 - -1.5) + -1.5]
+    //   let xyz = [
+    //     Math.random() * (0.1 - -0.1) + -0.1 * Math.sin(i / 2),
+    //     Math.random() * (0.1 - -0.1) + -0.1 * Math.sin(i / 2),
+    //     Math.random() * (0.1 - -0.1) + -0.1 * Math.sin(i / 2)
+    //   ];
+    //   // var y = 35 * Math.sin(i / 2);
+    //   this.geometry.attributes.position.setXYZ(i, ...xyz);
+    // }
 
     if (this.grow) {
       this.sphere.scale.x = parseFloat((this.sphere.scale.z + 0.01).toFixed(2));
       this.sphere.scale.y = parseFloat((this.sphere.scale.z + 0.01).toFixed(2));
       this.sphere.scale.z = parseFloat((this.sphere.scale.z + 0.01).toFixed(2));
-    } else if(!this.grow){
+    } else if (!this.grow) {
       this.sphere.scale.x = parseFloat((this.sphere.scale.z - 0.01).toFixed(2));
       this.sphere.scale.y = parseFloat((this.sphere.scale.z - 0.01).toFixed(2));
       this.sphere.scale.z = parseFloat((this.sphere.scale.z - 0.01).toFixed(2));
     }
-    if(this.sphere.scale.x == 3) this.grow = false
-    if(this.sphere.scale.x == 1) this.grow = true
+    if (this.sphere.scale.x == 3) this.grow = false;
+    if (this.sphere.scale.x == 1) this.grow = true;
     // console.log(this.sphere.scale.x, this.grow)
     // this.geometry.parameters.radius.needsUpdate = true
 
@@ -176,19 +191,20 @@ class Sphere {
 
 class Plane {
   constructor() {
-    this.geometry = new THREE.PlaneBufferGeometry(1000, 1000);
-    this.material = new THREE.ShadowMaterial({
-      opacity: 0.15
-    });
+    this.geometry = new THREE.PlaneBufferGeometry(2000, 2000);
+    // this.material = new THREE.ShadowMaterial({
+    //   opacity: 0.15
+    // });
+    this.material = new THREE.MeshPhongMaterial({ color: 0xaaccff });
     this.plane = new THREE.Mesh(this.geometry, this.material);
     this.init = this.init.bind(this);
     this.init();
   }
   init() {
-    this.plane.position.y = -50;
+    this.plane.position.y = -15;
     this.plane.position.x = 0;
     this.plane.position.z = 0;
-    this.plane.rotation.x = (Math.PI / 180) * -90;
+    this.plane.rotation.x = (Math.PI / 180) * -30;
     this.plane.receiveShadow = true;
   }
 }
@@ -219,6 +235,8 @@ class Quote {
       this.geometry.center();
       this.text = new THREE.Mesh(this.geometry, this.material);
       this.text.position.set(...coordinates);
+      this.text.receiveShadow = true;
+      this.text.castShadow = true;
       if (cb) cb();
     });
   }
