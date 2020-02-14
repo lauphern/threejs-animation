@@ -39,13 +39,17 @@ class World {
     this.hue = 0;
 
     this.composer = new EffectComposer(this.renderer);
+    // this.composer.renderer.autoClear = false;
     this.composer2 = new EffectComposer(
       this.renderer,
       new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight)
     );
+    this.composer.renderer.autoClear = false;
 
     this.renderPass = new RenderPass(this.scene, this.camera);
-    this.renderPass2 = new RenderPass(this.scene, this.camera);
+    this.renderPass.clear = false;
+    // this.renderPass2 = new RenderPass(this.scene, this.camera);
+    // this.renderPass2.clear = false;
 
     this.bokehPass = new BokehPass(this.scene, this.camera, {
       focus: 0.01,
@@ -56,16 +60,23 @@ class World {
       width: window.innerWidth,
       height: window.innerHeight
     });
+    // this.bokehPass.renderToScreen = true;
     this.glitchPass = new GlitchPass();
     this.composer.setSize(window.innerWidth, window.innerHeight);
-    this.composer2.setSize(window.innerWidth, window.innerHeight);
+    // this.composer2.setSize(window.innerWidth, window.innerHeight);
+    this.bokehPass.needsSwap = true;
+    this.bokehPass.renderToScreen = true;
+    // debugger;
+    // this.bokehPass.uniforms["tAdd"].value = this.composer.renderTarget1;
 
     this.composer.addPass(this.renderPass);
-    this.composer2.addPass(this.renderPass2);
+    // this.composer2.addPass(this.renderPass2);
 
-    this.composer2.addPass(this.bokehPass);
 
     this.composer.addPass(this.glitchPass);
+    this.composer.addPass(this.bokehPass);
+
+    // debugger
     // this.bokehPass.renderToScreen = true;
     this.animate();
   }
@@ -75,6 +86,7 @@ class World {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.BasicShadowMap;
     this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.autoClear = false;
     document.body.appendChild(this.renderer.domElement);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.scene.background = new THREE.Color(0xaaccff);
@@ -95,7 +107,7 @@ class World {
     this.scene.add(this.secondLine.text);
     this.scene.add(this.thirdLine.text);
     // this.camera.position.set(7, -2.7, 7);
-    this.camera.position.set(6, -0.7, 6.5);
+    this.camera.position.set(6, -0.3, 7.2);
     this.controls.update();
   }
 
@@ -118,10 +130,12 @@ class World {
     if (this.hue == 359) this.hue = 0;
     else this.hue++;
 
-    // this.sphereElement.animateSurface();
+    this.sphereElement.animateSurface();
     // this.renderer.render(this.scene, this.camera);
+
     this.composer.render();
-    this.composer2.render();
+    // this.composer2.render();
+    // debugger;
   }
 
   onWindowResize() {
