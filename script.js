@@ -3,7 +3,6 @@ const OrbitControls = require("three-orbit-controls")(THREE);
 import { EffectComposer } from "./node_modules/three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "./node_modules/three/examples/jsm/postprocessing/RenderPass.js";
 import { GlitchPass } from "./node_modules/three/examples/jsm/postprocessing/GlitchPass.js";
-import { UnrealBloomPass } from "./node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js";
 import { BokehPass } from "./node_modules/three/examples/jsm/postprocessing/BokehPass.js";
 
 //TODO poner algo de audio https://threejs.org/docs/index.html#api/en/audio/Audio
@@ -72,7 +71,6 @@ class World {
     this.composer.addPass(this.renderPass);
     // this.composer2.addPass(this.renderPass2);
 
-
     this.composer.addPass(this.glitchPass);
     this.composer.addPass(this.bokehPass);
 
@@ -89,7 +87,7 @@ class World {
     this.renderer.autoClear = false;
     document.body.appendChild(this.renderer.domElement);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.scene.background = new THREE.Color(0xaaccff);
+    this.scene.background = new THREE.Color("white");
     this.pointLight.position.set(0, 6, 20);
     this.pointLight.castShadow = true;
     this.pointLight.shadow.camera.near = 0.1;
@@ -147,9 +145,54 @@ class World {
 
 class Sphere {
   constructor() {
-    this.geometry = new THREE.SphereGeometry(1.2, 32, 32);
+    this.geometry = new THREE.SphereBufferGeometry(1.2, 32, 32);
+    this.geometry.computeBoundingBox();
     // debugger
-    this.material = new THREE.MeshPhongMaterial({ color: 0xff5733 });
+    // this.material = new THREE.MeshPhongMaterial({ color: 0xff5733 });
+    this.material = new THREE.MeshPhongMaterial({
+      uniforms: {
+        color1: {
+          value: new THREE.Color(0xaaccff)
+        },
+        color2: {
+          value: new THREE.Color("white")
+        },
+        bboxMin: {
+          value: this.geometry.boundingBox.min
+        },
+        bboxMax: {
+          value: this.geometry.boundingBox.max
+        }
+      },
+      vertexShader: `
+        uniform vec3 bboxMin;
+        uniform vec3 bboxMax;
+      
+        varying vec2 vUv;
+    
+        void main() {
+          vUv.y = (position.y - bboxMin.y) / (bboxMax.y - bboxMin.y);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 color1;
+        uniform vec3 color2;
+      
+        varying vec2 vUv;
+        
+        void main() {
+          
+          gl_FragColor = vec4(mix(color1, color2, vUv.y), 1.0);
+        }
+      `,
+      // wireframe: true
+      opacity: 0.3,
+      transparent: true
+      // side: THREE.DoubleSide
+    });
+    this.material.emissive = new THREE.Color("white");
+    this.material.emissiveIntensity = 0.2;
     this.sphere = new THREE.Mesh(this.geometry, this.material);
     this.grow = true;
     this.init = this.init.bind(this);
@@ -166,29 +209,25 @@ class Sphere {
     // var position = this.geometry.attributes.position;
     // debugger
     // this.geometry.attributes.position.usage = THREE.DynamicDrawUsage;
-    // for (let i = 0; i < this.geometry.attributes.position.count; i++) {
+    // // debugger
+    // for (let i = 0; i < this.geometry.attributes.position.count; i+=5) {
     //   // let xyz = [Math.random() * (1.5 - -1.5) + -1.5, Math.random() * (1.5 - -1.5) + -1.5, Math.random() * (1.5 - -1.5) + -1.5]
+    //   // let xyz = [
+    //   //   (Math.random() * (0.1 - -0.1) + -0.1) * Math.sin(i / 2),
+    //   //   (Math.random() * (0.1 - -0.1) + -0.1) * Math.sin(i / 2),
+    //   //   (Math.random() * (0.1 - -0.1) + -0.1) * Math.sin(i / 2)
+    //   // ];
+    //   // debugger
     //   let xyz = [
-    //     Math.random() * (0.1 - -0.1) + -0.1 * Math.sin(i / 2),
-    //     Math.random() * (0.1 - -0.1) + -0.1 * Math.sin(i / 2),
-    //     Math.random() * (0.1 - -0.1) + -0.1 * Math.sin(i / 2)
+    //     (Math.random() * (0.1 - -0.1) + -0.1) * (this.geometry.attributes.position.array[i] + Math.sin(this.geometry.attributes.position.array[i])),
+    //     (Math.random() * (0.1 - -0.1) + -0.1) * (this.geometry.attributes.position.array[i + 1] + Math.sin(this.geometry.attributes.position.array[i + 1])),
+    //     (Math.random() * (0.1 - -0.1) + -0.1) * (this.geometry.attributes.position.array[i + 2] + Math.sin(this.geometry.attributes.position.array[i + 2]))
     //   ];
     //   // var y = 35 * Math.sin(i / 2);
     //   this.geometry.attributes.position.setXYZ(i, ...xyz);
     // }
     // // debugger
     // this.geometry.attributes.position.needsUpdate = true;
-
-    // for (let i = 0; i < this.geometry.attributes.position.count; i++) {
-    //   // let xyz = [Math.random() * (1.5 - -1.5) + -1.5, Math.random() * (1.5 - -1.5) + -1.5, Math.random() * (1.5 - -1.5) + -1.5]
-    //   let xyz = [
-    //     Math.random() * (0.1 - -0.1) + -0.1 * Math.sin(i / 2),
-    //     Math.random() * (0.1 - -0.1) + -0.1 * Math.sin(i / 2),
-    //     Math.random() * (0.1 - -0.1) + -0.1 * Math.sin(i / 2)
-    //   ];
-    //   // var y = 35 * Math.sin(i / 2);
-    //   this.geometry.attributes.position.setXYZ(i, ...xyz);
-    // }
 
     if (this.grow) {
       this.sphere.scale.x = parseFloat((this.sphere.scale.z + 0.01).toFixed(2));
@@ -214,7 +253,8 @@ class Plane {
     // this.material = new THREE.ShadowMaterial({
     //   opacity: 0.15
     // });
-    this.material = new THREE.MeshPhongMaterial({ color: 0xaaccff });
+    // this.material = new THREE.MeshPhongMaterial({ color: 0xaaccff });
+    this.material = new THREE.MeshPhongMaterial({ color: new THREE.Color(0x003282) });
     this.plane = new THREE.Mesh(this.geometry, this.material);
     this.init = this.init.bind(this);
     this.init();
