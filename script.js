@@ -5,8 +5,6 @@ import { RenderPass } from "./node_modules/three/examples/jsm/postprocessing/Ren
 import { GlitchPass } from "./node_modules/three/examples/jsm/postprocessing/GlitchPass.js";
 import { BokehPass } from "./node_modules/three/examples/jsm/postprocessing/BokehPass.js";
 
-//TODO poner algo de audio https://threejs.org/docs/index.html#api/en/audio/Audio
-
 class World {
   constructor() {
     this.scene = new THREE.Scene();
@@ -29,7 +27,7 @@ class World {
     this.controls;
     this.ambientLight = new THREE.AmbientLight(0x404040, 2.5);
     this.pointLight = new THREE.PointLight(0x0377fc, 0.5, 100, 2);
-    this.secondaryPointLight = new THREE.PointLight(0xfcba03, 1, 100, 5);
+    this.secondaryPointLight = new THREE.PointLight(0xfcba03, 2, 100, 5);
 
     this.animate = this.animate.bind(this);
     this.onWindowResize = this.onWindowResize.bind(this);
@@ -38,7 +36,6 @@ class World {
     this.hue = 0;
 
     this.composer = new EffectComposer(this.renderer);
-    // this.composer.renderer.autoClear = false;
     this.composer2 = new EffectComposer(
       this.renderer,
       new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight)
@@ -47,8 +44,6 @@ class World {
 
     this.renderPass = new RenderPass(this.scene, this.camera);
     this.renderPass.clear = false;
-    // this.renderPass2 = new RenderPass(this.scene, this.camera);
-    // this.renderPass2.clear = false;
 
     this.bokehPass = new BokehPass(this.scene, this.camera, {
       focus: 0.01,
@@ -59,23 +54,16 @@ class World {
       width: window.innerWidth,
       height: window.innerHeight
     });
-    // this.bokehPass.renderToScreen = true;
     this.glitchPass = new GlitchPass();
     this.composer.setSize(window.innerWidth, window.innerHeight);
-    // this.composer2.setSize(window.innerWidth, window.innerHeight);
     this.bokehPass.needsSwap = true;
     this.bokehPass.renderToScreen = true;
-    // debugger;
-    // this.bokehPass.uniforms["tAdd"].value = this.composer.renderTarget1;
 
     this.composer.addPass(this.renderPass);
-    // this.composer2.addPass(this.renderPass2);
 
     this.composer.addPass(this.glitchPass);
     this.composer.addPass(this.bokehPass);
 
-    // debugger
-    // this.bokehPass.renderToScreen = true;
     this.animate();
   }
 
@@ -97,15 +85,12 @@ class World {
     this.scene.add(this.ambientLight);
     this.scene.add(this.pointLight);
     this.scene.add(this.secondaryPointLight);
-    //TODO do the fog
-    this.scene.fog = new THREE.FogExp2(0xaaccff, 0.0007);
     this.scene.add(this.sphereElement.sphere);
     this.scene.add(this.planeElement.plane);
     this.scene.add(this.firstLine.text);
     this.scene.add(this.secondLine.text);
     this.scene.add(this.thirdLine.text);
-    // this.camera.position.set(7, -2.7, 7);
-    this.camera.position.set(6, -0.3, 7.2);
+    this.camera.position.set(5.7, -0.3, 8.5);
     this.controls.update();
   }
 
@@ -128,12 +113,9 @@ class World {
     if (this.hue == 359) this.hue = 0;
     else this.hue++;
 
-    this.sphereElement.animateSurface();
-    // this.renderer.render(this.scene, this.camera);
+    this.sphereElement.animateSize();
 
     this.composer.render();
-    // this.composer2.render();
-    // debugger;
   }
 
   onWindowResize() {
@@ -147,8 +129,6 @@ class Sphere {
   constructor() {
     this.geometry = new THREE.SphereBufferGeometry(1.2, 32, 32);
     this.geometry.computeBoundingBox();
-    // debugger
-    // this.material = new THREE.MeshPhongMaterial({ color: 0xff5733 });
     this.material = new THREE.MeshPhongMaterial({
       uniforms: {
         color1: {
@@ -186,17 +166,15 @@ class Sphere {
           gl_FragColor = vec4(mix(color1, color2, vUv.y), 1.0);
         }
       `,
-      // wireframe: true
       opacity: 0.3,
       transparent: true
-      // side: THREE.DoubleSide
     });
     this.material.emissive = new THREE.Color("white");
     this.material.emissiveIntensity = 0.2;
     this.sphere = new THREE.Mesh(this.geometry, this.material);
     this.grow = true;
     this.init = this.init.bind(this);
-    this.animateSurface = this.animateSurface.bind(this);
+    this.animateSize = this.animateSize.bind(this);
     this.init();
   }
 
@@ -205,30 +183,7 @@ class Sphere {
     this.sphere.castShadow = true;
   }
 
-  animateSurface() {
-    // var position = this.geometry.attributes.position;
-    // debugger
-    // this.geometry.attributes.position.usage = THREE.DynamicDrawUsage;
-    // // debugger
-    // for (let i = 0; i < this.geometry.attributes.position.count; i+=5) {
-    //   // let xyz = [Math.random() * (1.5 - -1.5) + -1.5, Math.random() * (1.5 - -1.5) + -1.5, Math.random() * (1.5 - -1.5) + -1.5]
-    //   // let xyz = [
-    //   //   (Math.random() * (0.1 - -0.1) + -0.1) * Math.sin(i / 2),
-    //   //   (Math.random() * (0.1 - -0.1) + -0.1) * Math.sin(i / 2),
-    //   //   (Math.random() * (0.1 - -0.1) + -0.1) * Math.sin(i / 2)
-    //   // ];
-    //   // debugger
-    //   let xyz = [
-    //     (Math.random() * (0.1 - -0.1) + -0.1) * (this.geometry.attributes.position.array[i] + Math.sin(this.geometry.attributes.position.array[i])),
-    //     (Math.random() * (0.1 - -0.1) + -0.1) * (this.geometry.attributes.position.array[i + 1] + Math.sin(this.geometry.attributes.position.array[i + 1])),
-    //     (Math.random() * (0.1 - -0.1) + -0.1) * (this.geometry.attributes.position.array[i + 2] + Math.sin(this.geometry.attributes.position.array[i + 2]))
-    //   ];
-    //   // var y = 35 * Math.sin(i / 2);
-    //   this.geometry.attributes.position.setXYZ(i, ...xyz);
-    // }
-    // // debugger
-    // this.geometry.attributes.position.needsUpdate = true;
-
+  animateSize() {
     if (this.grow) {
       this.sphere.scale.x = parseFloat((this.sphere.scale.z + 0.01).toFixed(2));
       this.sphere.scale.y = parseFloat((this.sphere.scale.z + 0.01).toFixed(2));
@@ -240,21 +195,15 @@ class Sphere {
     }
     if (this.sphere.scale.x == 3) this.grow = false;
     if (this.sphere.scale.x == 1) this.grow = true;
-    // console.log(this.sphere.scale.x, this.grow)
-    // this.geometry.parameters.radius.needsUpdate = true
-
-    // debugger
   }
 }
 
 class Plane {
   constructor() {
     this.geometry = new THREE.PlaneBufferGeometry(2000, 2000);
-    // this.material = new THREE.ShadowMaterial({
-    //   opacity: 0.15
-    // });
-    // this.material = new THREE.MeshPhongMaterial({ color: 0xaaccff });
-    this.material = new THREE.MeshPhongMaterial({ color: new THREE.Color(0x003282) });
+    this.material = new THREE.MeshPhongMaterial({
+      color: new THREE.Color(0x003282)
+    });
     this.plane = new THREE.Mesh(this.geometry, this.material);
     this.init = this.init.bind(this);
     this.init();
