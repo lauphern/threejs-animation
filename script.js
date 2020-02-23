@@ -7,6 +7,7 @@ import { BokehPass } from "./node_modules/three/examples/jsm/postprocessing/Boke
 
 class World {
   constructor() {
+    //Basic elements: scene and camera
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(
       85,
@@ -14,6 +15,8 @@ class World {
       0.01,
       1000
     );
+
+    //Elements that will appear in the scene
     this.sphereElement = new Sphere();
     this.planeElement = new Plane();
     this.firstLine = new Quote("Home is not where you are born;", [0, 1, 5]);
@@ -21,48 +24,40 @@ class World {
     this.thirdLine = new Quote(
       "to escape cease",
       [0, -1, 5],
+      //We are going to call the init method that initializes the whole scene from the last quote
+      //To make sure that all the elements are created
+      //And the font for the text is loaded already
+      //We're dealing with asynchronous code here
       this.init.bind(this)
     );
+
+    //We use this property to animate the color of the quotes
+    //in the method animate
+    this.hue = 0;
+
+    //Renderer and (mouse) controls
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.controls;
+
+    //Lights
     this.ambientLight = new THREE.AmbientLight(0x404040, 2.5);
     this.pointLight = new THREE.PointLight(0x0377fc, 0.5, 100, 2);
     this.secondaryPointLight = new THREE.PointLight(0xfcba03, 2, 100, 5);
 
-    this.animate = this.animate.bind(this);
-    this.onWindowResize = this.onWindowResize.bind(this);
-    window.addEventListener("resize", this.onWindowResize, false);
-
-    this.hue = 0;
-
+    //Composers needed for postprocessing
     this.composer = new EffectComposer(this.renderer);
     this.composer2 = new EffectComposer(
       this.renderer,
       new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight)
     );
-    this.composer.renderer.autoClear = false;
 
-    this.renderPass = new RenderPass(this.scene, this.camera);
-    this.renderPass.clear = false;
+    //Bind methods (to keep the context of this object)
+    this.animate = this.animate.bind(this);
+    this.postprocessing = this.postprocessing.bind(this);
+    this.onWindowResize = this.onWindowResize.bind(this);
 
-    this.bokehPass = new BokehPass(this.scene, this.camera, {
-      focus: 0.01,
-      aspect: this.camera.aspect,
-      aperture: 0.0004,
-      maxblur: 0.7,
-
-      width: window.innerWidth,
-      height: window.innerHeight
-    });
-    this.glitchPass = new GlitchPass();
-    this.composer.setSize(window.innerWidth, window.innerHeight);
-    this.bokehPass.needsSwap = true;
-    this.bokehPass.renderToScreen = true;
-
-    this.composer.addPass(this.renderPass);
-
-    this.composer.addPass(this.glitchPass);
-    this.composer.addPass(this.bokehPass);
+    //Window resize listener to make it responsive
+    window.addEventListener("resize", this.onWindowResize, false);
 
     this.animate();
   }
@@ -92,27 +87,22 @@ class World {
     this.scene.add(this.thirdLine.text);
     this.camera.position.set(5.7, -0.3, 8.5);
     this.controls.update();
+    this.postprocessing();
   }
 
   animate() {
     requestAnimationFrame(this.animate);
 
-    this.sphereElement.sphere.rotation.x += 0.01;
-    this.sphereElement.sphere.rotation.y += 0.01;
+    //Color animation for the quote
+    this.firstLine.animateColor(this.hue);
+    this.secondLine.animateColor(this.hue);
+    this.thirdLine.animateColor(this.hue);
 
-    this.firstLine.material.color.set(
-      new THREE.Color(`hsl(${this.hue}, 70%, 85%)`)
-    );
-    this.secondLine.material.color.set(
-      new THREE.Color(`hsl(${this.hue}, 70%, 85%)`)
-    );
-    this.thirdLine.material.color.set(
-      new THREE.Color(`hsl(${this.hue}, 70%, 85%)`)
-    );
-
+    //Update hue value for the color animation
     if (this.hue == 359) this.hue = 0;
     else this.hue++;
 
+    //Animation for the sphere
     this.sphereElement.animateSize();
 
     this.composer.render();
@@ -122,6 +112,33 @@ class World {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  postprocessing() {
+    this.composer.renderer.autoClear = false;
+    this.composer.setSize(window.innerWidth, window.innerHeight);
+
+    let renderPass = new RenderPass(this.scene, this.camera);
+    renderPass.clear = false;
+
+    let bokehPass = new BokehPass(this.scene, this.camera, {
+      focus: 0.01,
+      aspect: this.camera.aspect,
+      aperture: 0.0004,
+      maxblur: 0.7,
+
+      width: window.innerWidth,
+      height: window.innerHeight
+    });
+    bokehPass.needsSwap = true;
+    bokehPass.renderToScreen = true;
+
+    let glitchPass = new GlitchPass();
+    
+
+    this.composer.addPass(renderPass);
+    this.composer.addPass(glitchPass);
+    this.composer.addPass(bokehPass);
   }
 }
 
@@ -198,25 +215,6 @@ class Sphere {
   }
 }
 
-class Plane {
-  constructor() {
-    this.geometry = new THREE.PlaneBufferGeometry(2000, 2000);
-    this.material = new THREE.MeshPhongMaterial({
-      color: new THREE.Color(0x003282)
-    });
-    this.plane = new THREE.Mesh(this.geometry, this.material);
-    this.init = this.init.bind(this);
-    this.init();
-  }
-  init() {
-    this.plane.position.y = -15;
-    this.plane.position.x = 0;
-    this.plane.position.z = 0;
-    this.plane.rotation.x = (Math.PI / 180) * -30;
-    this.plane.receiveShadow = true;
-  }
-}
-
 class Quote {
   constructor(qt, coordinates, cb) {
     this.qt = qt;
@@ -227,6 +225,7 @@ class Quote {
     });
     this.text;
     this.init = this.init.bind(this);
+    this.animateColor = this.animateColor.bind(this);
     this.init(coordinates, cb);
   }
 
@@ -247,6 +246,29 @@ class Quote {
       this.text.castShadow = true;
       if (cb) cb();
     });
+  }
+
+  animateColor(hue) {
+    this.material.color.set(new THREE.Color(`hsl(${hue}, 70%, 85%)`));
+  }
+}
+
+class Plane {
+  constructor() {
+    this.geometry = new THREE.PlaneBufferGeometry(2000, 2000);
+    this.material = new THREE.MeshPhongMaterial({
+      color: new THREE.Color(0x003282)
+    });
+    this.plane = new THREE.Mesh(this.geometry, this.material);
+    this.init = this.init.bind(this);
+    this.init();
+  }
+  init() {
+    this.plane.position.y = -15;
+    this.plane.position.x = 0;
+    this.plane.position.z = 0;
+    this.plane.rotation.x = (Math.PI / 180) * -30;
+    this.plane.receiveShadow = true;
   }
 }
 
