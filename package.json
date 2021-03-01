@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/lauphern/threejs-animation#readme",
   "dependencies": {
-    "three": "^0.113.2",
+    "three": "^0.125.0",
     "three-orbit-controls": "^82.1.0"
   },
   "devDependencies": {
